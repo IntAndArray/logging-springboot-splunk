@@ -1,0 +1,38 @@
+version: '2'
+services:
+  demo-application:
+    image: logging-springboot-splunk
+    user: root
+    environment:
+      - LOGGING_FILE_NAME=/logs/demo-application.log
+      - log-opt splunk-token=d3b12e70-453c-4c9c-8a25-34c84aab8819
+    ports:
+      - "8080:8080"
+    volumes:
+      - log_volume:/logs
+  splunk:
+    image: splunk/splunk:8.0
+    hostname: splunk
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_USER=root
+      - SPLUNK_ENABLE_LISTEN=9997
+      - SPLUNK_PASSWORD=password
+    ports:
+      - "8000:8000"
+  splunkforwarder:
+    image: splunk/universalforwarder:8.0
+    hostname: splunkforwarder
+    environment:
+      - SPLUNK_START_ARGS=--accept-license --answer-yes
+      - SPLUNK_STANDALONE_URL=splunk:9997
+      - SPLUNK_USER=root
+      - SPLUNK_ADD=monitor /logs
+      - SPLUNK_PASSWORD=admin
+    restart: always
+    depends_on:
+      - splunk
+    volumes:
+      - log_volume:/logs
+volumes:
+  log_volume:
